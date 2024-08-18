@@ -1,0 +1,1 @@
+"VM Exception while processing transaction: invalid opcode" Issue was fixed by changing my solc version to "0.8.7-fixed"

@@ -1,0 +1,100 @@
+//http://127.0.0.1:7545
+
+//const { ethers } = require("ethers");
+const ethers = require("ethers");
+const fs = require("fs-extra");
+require("dotenv").config();
+
+async function main() {
+  /*console.log("Hi");
+  let variable = 5;
+  console.log(variable);*/
+
+  const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
+  const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+
+  /*const encryptedKey = fs.readFileSync("./.encryptedKey.json", "utf8");
+  let wallet = new ethers.Wallet.fromEncryptedJsonSync(
+    encryptedKey,
+    process.env.PRIVATE_KEY_PASSWORD,
+  );
+  wallet = await wallet.connect(provider);*/
+
+  /*const encryptedKey = fs.readFileSync("./.encryptedKey.json", "utf8");
+  let wallet = new ethers.Wallet.fromEncryptedJsonSync(
+    encryptedKey,
+    process.env.PRIVATE_KEY_PASSWORD
+  );
+  wallet = await wallet.connect(provider);*/
+
+  console.log(process.env.PRIVATE_KEY);
+  console.log(process.env.RPC_URL);
+  const abi = fs.readFileSync("./SimpleStorage_sol_SimpleStorage.json", "utf8"); //reading abi file by setting the abi file in json format for more clarity
+  const binary = fs.readFileSync(
+    "./SimpleStorage_sol_SimpleStorage.bin",
+    "utf8",
+  );
+  const contractFactory = new ethers.ContractFactory(abi, binary, wallet);
+  console.log("Deploying contract, please wait...");
+  //The reason for using 'await' keyword in the following line is that we are saying to our code: STOP here!! Wait for contract to deploy.
+  const contract = await contractFactory.deploy(); //add gasLimit if there is any issue about gas fees
+  const contractReceipt = await contract.deployTransaction.wait(1); //wait(1) means to wait for 1 block confirmation
+  console.log(`Contract Address: ${contract.address}`); //print the contract's address
+  const CurrentFavNumber = await contract.retrieve(); //calling the retrieve function of our SimpleStorage contract
+  console.log(`Current Favorite Number: ${CurrentFavNumber.toString()}`); //we want to use big numbers or strings when working with ethers, so that is why we are using toString() function to make it more readable
+  const transactionResponse = await contract.store("100"); //it is a good practice to pass variables to contract functions as string
+  const transactionReceipt = await transactionResponse.wait(1);
+  const UpdatedFavNumber = await contract.retrieve();
+  console.log(`Updated Favorite Number: ${UpdatedFavNumber.toString()}`);
+  // console.log("Contract Receipt:");
+  // console.log(contractReceipt);
+  // console.log("Deployment Transaction:");
+  // console.log(contract.deployTransaction);
+  // //console.log(contract);
+
+  /*console.log("Now, let's deploy with only transaction data!!");
+  const nonce = await wallet.getTransactionCount(); //function used to get nonce by counting the number of transactions
+  const chainid = await wallet.getChainId();
+  const transaction = {
+    nonce: nonce,
+    to: null,
+    gasPrice: 20000000000,
+    gasLimit: 6721975,
+    //optimization: 200,
+    value: 0,
+    data: "0x608060405234801561001057600080fd5b50610777806100206000396000f3fe608060405234801561001057600080fd5b50600436106100575760003560e01c80630276fc4c1461005c5780632e64cec11461008c5780636057361d146100aa5780636f760f41146100c65780639e7a13ad146100e2575b600080fd5b610076600480360381019061007191906103ce565b610113565b6040516100839190610530565b60405180910390f35b610094610141565b6040516100a19190610530565b60405180910390f35b6100c460048036038101906100bf9190610473565b61014a565b005b6100e060048036038101906100db9190610417565b610154565b005b6100fc60048036038101906100f79190610473565b6101ea565b60405161010a92919061054b565b60405180910390f35b6001818051602081018201805184825260208301602085012081835280955050505050506000915090505481565b60008054905090565b8060008190555050565b6000604051806040016040528083815260200184815250905060028190806001815401808255809150506001900390600052602060002090600202016000909190919091506000820151816000015560208201518160010190805190602001906101bf9291906102a6565b505050816001846040516101d39190610519565b908152602001604051809103902081905550505050565b600281815481106101fa57600080fd5b906000526020600020906002020160009150905080600001549080600101805461022390610644565b80601f016020809104026020016040519081016040528092919081815260200182805461024f90610644565b801561029c5780601f106102715761010080835404028352916020019161029c565b820191906000526020600020905b81548152906001019060200180831161027f57829003601f168201915b5050505050905082565b8280546102b290610644565b90600052602060002090601f0160209004810192826102d4576000855561031b565b82601f106102ed57805160ff191683800117855561031b565b8280016001018555821561031b579182015b8281111561031a5782518255916020019190600101906102ff565b5b509050610328919061032c565b5090565b5b8082111561034557600081600090555060010161032d565b5090565b600061035c610357846105a0565b61057b565b9050828152602081018484840111156103785761037761070a565b5b610383848285610602565b509392505050565b600082601f8301126103a05761039f610705565b5b81356103b0848260208601610349565b91505092915050565b6000813590506103c88161072a565b92915050565b6000602082840312156103e4576103e3610714565b5b600082013567ffffffffffffffff8111156104025761040161070f565b5b61040e8482850161038b565b91505092915050565b6000806040838503121561042e5761042d610714565b5b600083013567ffffffffffffffff81111561044c5761044b61070f565b5b6104588582860161038b565b9250506020610469858286016103b9565b9150509250929050565b60006020828403121561048957610488610714565b5b6000610497848285016103b9565b91505092915050565b60006104ab826105d1565b6104b581856105dc565b93506104c5818560208601610611565b6104ce81610719565b840191505092915050565b60006104e4826105d1565b6104ee81856105ed565b93506104fe818560208601610611565b80840191505092915050565b610513816105f8565b82525050565b600061052582846104d9565b915081905092915050565b6000602082019050610545600083018461050a565b92915050565b6000604082019050610560600083018561050a565b818103602083015261057281846104a0565b90509392505050565b6000610585610596565b90506105918282610676565b919050565b6000604051905090565b600067ffffffffffffffff8211156105bb576105ba6106d6565b5b6105c482610719565b9050602081019050919050565b600081519050919050565b600082825260208201905092915050565b600081905092915050565b6000819050919050565b82818337600083830152505050565b60005b8381101561062f578082015181840152602081019050610614565b8381111561063e576000848401525b50505050565b6000600282049050600182168061065c57607f821691505b602082108114156106705761066f6106a7565b5b50919050565b61067f82610719565b810181811067ffffffffffffffff8211171561069e5761069d6106d6565b5b80604052505050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052602260045260246000fd5b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b610733816105f8565b811461073e57600080fd5b5056fea2646970667358221220f266eff73e4d1c3993d766fbfcfa73e01274992751ee42edd0445f20ee11e65364736f6c63430008070033",
+    chainId: chainid,
+  };
+  const signedTransaction = await wallet.signTransaction(transaction); //used to sign transaction
+  console.log(signedTransaction); //no need to sign the transaction by ourselves as ethers signs the transaction before sending it
+  const sentTransaction = await wallet.sendTransaction(transaction); //used to sign transaction
+  console.log(sentTransaction);*/
+
+  console.log("Contract deployed successfully!!");
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+
+// synchronous [solidity]
+// asynchronous [javascript]
+
+// cooking
+// Synchronous
+// 1. Put popcorn in microwave -> Promise
+// 2. Wait for popcorn to finish
+// 3. Pour drinks for everyone
+
+// Asynchronous
+// 1. Put popcorn in the mircrowave
+// 2. Pour drinks for everyone
+// 3. Wait for popcorn to finish
+
+// Promise
+// Pending
+// Fulfilled
+// Rejected
